@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JEE Main Mock Test - NTA Interface</title>
+    <style>
+        :root {
+            --nta-blue: #2196F3;
+            --nta-header: #eeeeee;
+            --answered: #2e7d32;
+            --not-answered: #c62828;
+            --marked: #7b1fa2;
+            --not-visited: #ffffff;
+            --review-answered: #7b1fa2; /* Purple with small green tick in real NTA */
+        }
+
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #f4f4f4; overflow-x: hidden; }
+        
+        /* Top Bar */
+        .header { background: #fff; padding: 10px 20px; display: flex; justify-content: space-between; border-bottom: 2px solid #ddd; align-items: center; }
+        .exam-name { font-weight: bold; color: #444; }
+
+        /* Main Layout */
+        .main-container { display: flex; height: calc(100vh - 60px); }
+
+        /* Left Side: Question Area */
+        .question-section { flex: 3; background: #fff; padding: 20px; display: flex; flex-direction: column; border-right: 1px solid #ccc; }
+        .q-header { border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; display: flex; justify-content: space-between;}
+        .q-text { font-size: 18px; margin-bottom: 20px; min-height: 150px; }
+        .options { display: flex; flex-direction: column; gap: 10px; }
+        .option-item { padding: 10px; border: 1px solid #eee; border-radius: 4px; cursor: pointer; display: flex; align-items: center; }
+        .option-item:hover { background: #f9f9f9; }
+
+        /* Right Side: Palette */
+        .sidebar { flex: 1; background: #e5f1fa; padding: 15px; display: flex; flex-direction: column; min-width: 300px; }
+        .user-info { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; background: #fff; padding: 10px; border-radius: 5px; }
+        .user-img { width: 50px; height: 50px; background: #ccc; border-radius: 4px; }
+        
+        .palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 15px; max-height: 300px; overflow-y: auto; }
+        .p-btn { width: 40px; height: 35px; border: 1px solid #999; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%); }
+        
+        /* Status Colors */
+        .status-0 { background: #fff; color: #000; } /* Not Visited */
+        .status-1 { background: var(--not-answered); color: #fff; border-radius: 50% 50% 0 0; } /* Not Answered */
+        .status-2 { background: var(--answered); color: #fff; clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%); } /* Answered */
+        .status-3 { background: var(--marked); color: #fff; border-radius: 50%; } /* Marked for Review */
+
+        /* Footer Buttons */
+        .footer-btns { margin-top: auto; padding-top: 20px; display: flex; gap: 10px; border-top: 1px solid #eee; }
+        .btn { padding: 10px 15px; border: 1px solid #ccc; cursor: pointer; font-weight: bold; border-radius: 2px; }
+        .btn-save { background: #2e7d32; color: white; border: none; }
+        .btn-review { background: #f9a825; color: white; border: none; }
+        .btn-submit { background: var(--nta-blue); color: white; width: 100%; margin-top: 20px; }
+
+        /* Result Section */
+        #result-screen { display: none; padding: 40px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div id="exam-screen">
+    <div class="header">
+        <div class="exam-name">JEE Main 2026 - Physics (Jitu Sir)</div>
+        <div id="timer" style="font-weight: bold; font-size: 1.2rem; background: #333; color: #fff; padding: 5px 15px; border-radius: 4px;">Time Left: 60:00</div>
+    </div>
+
+    <div class="main-container">
+        <div class="question-section">
+            <div class="q-header">
+                <span id="q-number-title">Question No. 1</span>
+            </div>
+            <div id="q-content">
+                <div class="q-text" id="question-text">Loading question...</div>
+                <div class="options" id="options-container">
+                    </div>
+            </div>
+            <div class="footer-btns">
+                <button class="btn btn-review" onclick="markForReview()">Mark for Review & Next</button>
+                <button class="btn" onclick="clearResponse()">Clear Response</button>
+                <button class="btn btn-save" onclick="saveAndNext()" style="margin-left: auto;">Save & Next</button>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="user-info">
+                <div class="user-img"></div>
+                <div>
+                    <div style="font-weight: bold;">Candidate Name</div>
+                    <div style="font-size: 12px; color: #666;">Subject: Physics</div>
+                </div>
+            </div>
+            
+            <div style="font-size: 13px; font-weight: bold;">Question Palette:</div>
+            <div class="palette-grid" id="palette">
+                </div>
+
+            <div style="margin-top: 20px; border-top: 1px solid #ccc; padding-top: 10px; font-size: 12px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                    <span class="p-btn status-2" style="width: 20px; height: 15px;">0</span> Answered
+                    <span class="p-btn status-1" style="width: 20px; height: 15px;">0</span> Not Answered
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <span class="p-btn status-0" style="width: 20px; height: 15px;">0</span> Not Visited
+                    <span class="p-btn status-3" style="width: 20px; height: 15px;">0</span> Marked
+                </div>
+            </div>
+
+            <button class="btn btn-submit" onclick="submitExam()">SUBMIT</button>
+        </div>
+    </div>
+</div>
+
+<div id="result-screen">
+    <h1 id="score-val">Calculating...</h1>
+    <div id="feedback-text"></div>
+    <button onclick="location.reload()" class="btn btn-save" style="margin-top: 20px;">Restart Test</button>
+</div>
+
+<script>
+    const questions = [
+        { q: "A particle moves in a straight line such that v = α√s. The acceleration is:", options: ["α²/2", "α²", "α/2", "Zero"], correct: 0 },
+        { q: "A block on a smooth wedge doesn't slip when accelerated horizontally. Force by wedge is:", options: ["mg cosθ", "mg / cosθ", "mg sinθ", "mg tanθ"], correct: 1 },
+        { q: "A bullet (mass a, velocity b) hits a block (mass c). Final velocity is:", options: ["ab/(a+c)", "ab/c", "(a+c)b/a", "ac/(a+b)"], correct: 0 },
+        { q: "Solid and hollow spheres (same M, R) roll down an incline. Which reaches first?", options: ["Solid sphere", "Hollow sphere", "Both same time", "Higher density one"], correct: 0 },
+        { q: "A 44% increase in length of a pendulum increases time period by:", options: ["44%", "20%", "10%", "22%"], correct: 1 },
+        // ... (Adding only 5 for brevity, but you can expand this array to 30)
+    ];
+
+    let currentQ = 0;
+    let states = new Array(questions.length).fill(0); // 0:Not visited, 1:Not answered, 2:Answered, 3:Marked
+    let responses = new Array(questions.length).fill(null);
+
+    function init() {
+        const palette = document.getElementById('palette');
+        for (let i = 0; i < questions.length; i++) {
+            const btn = document.createElement('div');
+            btn.className = `p-btn status-0`;
+            btn.id = `pal-${i}`;
+            btn.innerText = i + 1;
+            btn.onclick = () => loadQuestion(i);
+            palette.appendChild(btn);
+        }
+        loadQuestion(0);
+        startTimer(3600);
+    }
+
+    function loadQuestion(index) {
+        if(states[index] === 0) states[index] = 1;
+        currentQ = index;
+        document.getElementById('q-number-title').innerText = `Question No. ${index + 1}`;
+        document.getElementById('question-text').innerText = questions[index].q;
+        
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+        questions[index].options.forEach((opt, i) => {
+            const div = document.createElement('div');
+            div.className = 'option-item';
+            div.innerHTML = `<input type="radio" name="opt" value="${i}" ${responses[index] == i ? 'checked' : ''}> ${opt}`;
+            div.onclick = () => { div.querySelector('input').checked = true; };
+            container.appendChild(div);
+        });
+        updatePalette();
+    }
+
+    function saveAndNext() {
+        const selected = document.querySelector('input[name="opt"]:checked');
+        if (selected) {
+            responses[currentQ] = selected.value;
+            states[currentQ] = 2;
+        } else {
+            states[currentQ] = 1;
+        }
+        if (currentQ < questions.length - 1) loadQuestion(currentQ + 1);
+        else updatePalette();
+    }
+
+    function markForReview() {
+        const selected = document.querySelector('input[name="opt"]:checked');
+        if (selected) responses[currentQ] = selected.value;
+        states[currentQ] = 3;
+        if (currentQ < questions.length - 1) loadQuestion(currentQ + 1);
+        else updatePalette();
+    }
+
+    function clearResponse() {
+        const selected = document.querySelector('input[name="opt"]:checked');
+        if (selected) selected.checked = false;
+        responses[currentQ] = null;
+        states[currentQ] = 1;
+        updatePalette();
+    }
+
+    function updatePalette() {
+        for (let i = 0; i < questions.length; i++) {
+            const btn = document.getElementById(`pal-${i}`);
+            btn.className = `p-btn status-${states[i]}`;
+            if(i === currentQ) btn.style.border = "2px solid blue";
+            else btn.style.border = "1px solid #999";
+        }
+    }
+
+    function startTimer(sec) {
+        const timerEl = document.getElementById('timer');
+        const interval = setInterval(() => {
+            sec--;
+            let m = Math.floor(sec / 60);
+            let s = sec % 60;
+            timerEl.innerText = `Time Left: ${m}:${s < 10 ? '0' + s : s}`;
+            if (sec <= 0) { clearInterval(interval); submitExam(); }
+        }, 1000);
+    }
+
+    function submitExam() {
+        let score = 0;
+        responses.forEach((res, i) => {
+            if (res !== null) {
+                if (parseInt(res) === questions[i].correct) score += 4;
+                else score -= 1;
+            }
+        });
+        document.getElementById('exam-screen').style.display = 'none';
+        document.getElementById('result-screen').style.display = 'block';
+        document.getElementById('score-val').innerText = `Final Score: ${score}`;
+        document.getElementById('feedback-text').innerHTML = `
+            <p>Accuracy: ${((score / (questions.length * 4)) * 100).toFixed(2)}%</p>
+            <p>Jitu Sir says: "Review your weak areas and cross-check the error analysis!"</p>
+        `;
+    }
+
+    init();
+</script>
+</body>
+</html>
